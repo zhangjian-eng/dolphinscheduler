@@ -35,6 +35,7 @@ import org.apache.dolphinscheduler.plugin.task.api.resource.ResourceContext;
 import org.apache.dolphinscheduler.plugin.task.api.shell.IShellInterceptorBuilder;
 import org.apache.dolphinscheduler.plugin.task.api.shell.ShellInterceptorBuilderFactory;
 import org.apache.dolphinscheduler.plugin.task.api.utils.ParameterUtils;
+import org.apache.dolphinscheduler.plugin.task.seatunnel.generator.SeatunnelConfigGenerator;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -58,6 +59,11 @@ public class SeatunnelTask extends AbstractRemoteTask {
     private static final String SEATUNNEL_BIN_DIR = "${SEATUNNEL_HOME}/bin/";
 
     /**
+     * jvm parameters
+     */
+    private static final String JVM_PARAMS = "-DJvmOption=\"-Xms%dG -Xmx%dG\"";
+
+    /**
      * seatunnel parameters
      */
     private SeatunnelParameters seatunnelParameters;
@@ -71,6 +77,11 @@ public class SeatunnelTask extends AbstractRemoteTask {
      * taskExecutionContext
      */
     protected final TaskExecutionContext taskExecutionContext;
+
+    /**
+     * seatunnelTaskExecutionContext
+     */
+    protected SeatunnelTaskExecutionContext seatunnelTaskExecutionContext;
 
     /**
      * constructor
@@ -95,6 +106,9 @@ public class SeatunnelTask extends AbstractRemoteTask {
         if (seatunnelParameters == null || !seatunnelParameters.checkParameters()) {
             throw new TaskException("SeaTunnel task params is not valid");
         }
+
+        seatunnelTaskExecutionContext =
+                seatunnelParameters.generateExtendedContext(taskExecutionContext.getResourceParametersHelper());
     }
 
     // todo split handle to submit and track
@@ -159,19 +173,30 @@ public class SeatunnelTask extends AbstractRemoteTask {
         List<String> args = new ArrayList<>();
         args.add(CONFIG_OPTIONS);
         String scriptContent;
-        if (BooleanUtils.isTrue(seatunnelParameters.getUseCustom())) {
-            scriptContent = buildCustomConfigContent();
+        if (BooleanUtils.isTrue(seatunnelParameters.isUseCustom())) {
+            if (null != seatunnelParameters.getResourceList() && !seatunnelParameters.getResourceList().isEmpty()) {
+                // use resource file
+                String resourceFileName = seatunnelParameters.getResourceList().get(0).getResourceName();
+                ResourceContext resourceContext = taskExecutionContext.getResourceContext();
+                scriptContent = FileUtils.readFileToString(
+                        new File(resourceContext.getResourceItem(resourceFileName).getResourceAbsolutePathInLocal()),
+                        StandardCharsets.UTF_8);
+            } else {
+                // use custom config
+                scriptContent = buildCustomConfigContent();
+            }
         } else {
-            String resourceFileName = seatunnelParameters.getResourceList().get(0).getResourceName();
-            ResourceContext resourceContext = taskExecutionContext.getResourceContext();
-            scriptContent = FileUtils.readFileToString(
-                    new File(resourceContext.getResourceItem(resourceFileName).getResourceAbsolutePathInLocal()),
-                    StandardCharsets.UTF_8);
+            // use generator config
+            scriptContent =
+                    SeatunnelConfigGenerator.generateSeatunnelJob(seatunnelParameters, seatunnelTaskExecutionContext);
         }
         String filePath = buildConfigFilePath();
         createConfigFileIfNotExists(scriptContent, filePath);
         args.add(filePath);
         args.addAll(generateTaskParameters());
+
+        // Add JVM options
+        args.add(loadJvmParams());
         return args;
     }
 
@@ -237,6 +262,13 @@ public class SeatunnelTask extends AbstractRemoteTask {
     private String parseScript(String script) {
         Map<String, Property> paramsMap = taskExecutionContext.getPrepareParamsMap();
         return ParameterUtils.convertParameterPlaceholders(script, ParameterUtils.convert(paramsMap));
+    }
+
+    public String loadJvmParams() {
+        int xms = Math.max(seatunnelParameters.getXms(), 1);
+        int xmx = Math.max(seatunnelParameters.getXmx(), 1);
+
+        return String.format(JVM_PARAMS, xms, xmx);
     }
 
     public void setSeatunnelParameters(SeatunnelParameters seatunnelParameters) {

@@ -35,7 +35,7 @@ export type { ITaskState } from '@/common/types'
 
 export type RelationType = 'AND' | 'OR'
 
-type SourceType = 'MYSQL' | 'HDFS' | 'HIVE'
+type SourceType = 'MYSQL' | 'HDFS' | 'HIVE' | 'DORIS'
 type ModelType = 'import' | 'export'
 type ITaskType = TaskType
 type IDateType = 'hour' | 'day' | 'week' | 'month'
@@ -260,6 +260,38 @@ interface IRuleParameters {
   mapping_columns?: string
 }
 
+interface ISeatunnelParams {
+  sourceType?: SourceType
+  sourceDatabase?: number
+  sourceFilePath?: string
+  targetType?: SourceType
+  targetDatabase?: number
+  targetFilePath?: string
+  customDataFilter?: boolean
+  customTransform?: string
+  sourceFileFormat?: string
+  targetFileFormat?: string
+  sourceDefaultFs?: string
+  targetDefaultFs?: string
+  parallelism?: number
+  sourceTable?: string
+  targetTable?: string
+  sourceCustomParams?: ILocalParam[]
+  targetCustomParams?: ILocalParam[]
+  jobMode?: string
+}
+
+interface ISeatunnelDataParams {
+  dbType?: SourceType
+  databaseId?: number
+  filePath?: string
+  defaultFs?: string
+  fileFormat?: string
+  parallelism?: number
+  table?: string
+  customParams?: ILocalParam[]
+}
+
 interface ITaskParams {
   resourceList?: ISourceItem[]
   mainJar?: ISourceItem
@@ -464,6 +496,18 @@ interface ITaskParams {
   yarnQueue?: string
   awsRegion?: string
   kubeConfig?: string
+  sourceDatabase?: number
+  sourceFilePath?: string
+  targetDatabase?: number
+  targetFilePath?: string
+  customDataFilter?: boolean
+  customTransform?: string
+  fileFormat?: string
+  sourceConfig?: string
+  targetConfig?: string
+  table?: string
+  defaultFs?: string
+  jobMode?: string
 }
 
 interface INodeData
@@ -481,6 +525,7 @@ interface INodeData
     ISqoopTargetData,
     ISqoopSourceData,
     IDependentParameters,
+    ISeatunnelParams,
     Omit<IRuleParameters, 'mapping_columns'> {
   id?: string
   taskType?: ITaskType
@@ -557,5 +602,6 @@ export {
   IJsonItemParams,
   IResponseJsonItem,
   IDateType,
-  IDependentParameters
+  IDependentParameters,
+  ISeatunnelDataParams
 }

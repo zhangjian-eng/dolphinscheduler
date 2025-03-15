@@ -32,4 +32,37 @@ public class Constants {
     public static final String JSON_SUFFIX = "json";
     public static final String CONF_SUFFIX = "conf";
 
+    public static final String EQUAL_SIGN = " = ";
+    public static final String LINE_BREAK = "\n";
+    public static final String INDENT_TWO_SPACE = "  ";
+    public static final String INDENT_FOUR_SPACE = "    ";
+    public static final String DOUBLE_QUOTE = "\"";
+    public static final String SINGLE_BRACKETS_RIGHT = "}";
+    public static final String SINGLE_BRACKETS_LEFT = "{";
+
+    /**
+     * doris config
+     */
+    public static final String DORIS_CONFIG = "doris.config";
+    public static final String FORMAT_JSON = "json";
+    public static final String READ_JSON_BY_LINE_VALUE = "true";
+    public static final String DORIS_CONFIG_SINK_TEMPLATE = "    doris.config {\n" +
+            "      format = \"%s\"" + "\n" +
+            "      read_json_by_line = \"%s\"" + "\n" +
+            "    }\n";
+    public static final String DORIS_HTTP_PORT = "8030";
+
+    /**
+     * mysql config
+     */
+    public static final String MYSQL_EXTRA_SINK_PARAMS =
+            "    database = \"%s\"\n" +
+                    "    table = \"%s\"\n" +
+                    "    generate_sink_sql = \"%s\"\n";
+    public static final String MYSQL_QUERY_PARAMS = "    query = \"%s\"\n";
+    public static final String MYSQL_DEFAULT_QUERY_PREFIX = "select * from ";
+
+    public static final String MYSQL = "MYSQL";
+    public static final String HDFS = "HDFS";
+    public static final String DORIS = "DORIS";
 }

@@ -26,6 +26,7 @@ import org.apache.dolphinscheduler.plugin.task.api.model.ResourceInfo;
 import org.apache.dolphinscheduler.plugin.task.api.resource.ResourceContext;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,7 +85,7 @@ public class SeatunnelTaskTest {
     public void testReadConfigFromResourceCenter() throws Exception {
         String taskId = "2345";
         SeatunnelParameters seatunnelParameters = new SeatunnelParameters();
-        seatunnelParameters.setUseCustom(false);
+        seatunnelParameters.setUseCustom(true);
         ResourceInfo resourceInfo = new ResourceInfo();
         resourceInfo.setResourceName(RESOURCE_SCRIPT_PATH);
         seatunnelParameters.setResourceList(Collections.singletonList(resourceInfo));
@@ -108,7 +109,7 @@ public class SeatunnelTaskTest {
     public void testParameterPass() throws Exception {
         String taskId = "3456";
         SeatunnelParameters seatunnelParameters = new SeatunnelParameters();
-        seatunnelParameters.setUseCustom(false);
+        seatunnelParameters.setUseCustom(true);
         ResourceInfo resourceInfo = new ResourceInfo();
         resourceInfo.setResourceName(RESOURCE_SCRIPT_PATH);
         List<Property> localParam = new ArrayList<>();
@@ -130,6 +131,34 @@ public class SeatunnelTaskTest {
         seatunnelTask.setSeatunnelParameters(seatunnelParameters);
         String command = String.join(" ", seatunnelTask.buildOptions());
         String expectedCommand = String.format("--config %s/seatunnel_%s.conf -i key1='value1'", EXECUTE_PATH, taskId);
+        Assertions.assertEquals(expectedCommand, command);
+    }
+
+    @Test
+    public void testLoadJvmParams() throws Exception {
+        int xms = 2;
+        int xmx = 5;
+        String taskAppId = "1";
+
+        SeatunnelParameters seatunnelParameters = new SeatunnelParameters();
+        seatunnelParameters.setXms(xms);
+        seatunnelParameters.setXmx(xmx);
+        seatunnelParameters.setUseCustom(true);
+        seatunnelParameters.setRawScript(StringUtils.EMPTY);
+
+        TaskExecutionContext taskExecutionContext = new TaskExecutionContext();
+        taskExecutionContext.setExecutePath(EXECUTE_PATH);
+        taskExecutionContext.setTaskAppId(taskAppId);
+
+        SeatunnelTask seatunnelTask = new SeatunnelTask(taskExecutionContext);
+        seatunnelTask.setSeatunnelParameters(seatunnelParameters);
+
+        List<String> options = seatunnelTask.buildOptions();
+
+        String command = String.join(" ", options);
+        String expectedCommand = String.format("--config %s/seatunnel_%s.conf -DJvmOption=\"-Xms%dG -Xmx%dG\"",
+                EXECUTE_PATH, taskAppId, xms, xmx);
+
         Assertions.assertEquals(expectedCommand, command);
     }
 
@@ -180,4 +209,5 @@ public class SeatunnelTaskTest {
             "    \"Console\": {}\n" +
             "  }\n" +
             "}";
+
 }

@@ -23,7 +23,8 @@ import type {
   ISqoopTargetParams,
   ISqoopSourceParams,
   ILocalParam,
-  IDependentParameters
+  IDependentParameters,
+  ISeatunnelDataParams
 } from './types'
 import { ref } from 'vue'
 
@@ -209,6 +210,13 @@ export function formatParams(data: INodeData): {
   if (data.taskType === 'SEATUNNEL') {
     taskParams.startupScript = data.startupScript
     taskParams.useCustom = data.useCustom
+    taskParams.parallelism = data.parallelism
+    taskParams.jobMode = data.jobMode
+    taskParams.xms = data.xms
+    taskParams.xmx = data.xmx
+    const sourceConfig: ISeatunnelDataParams = {}
+    const targetConfig: ISeatunnelDataParams = {}
+
     if (!data.useCustom) {
       taskParams.rawScript = ''
     }
@@ -225,6 +233,39 @@ export function formatParams(data: INodeData): {
       taskParams.deployMode = data.deployMode
       taskParams.others = data.others
     }
+
+    if (data.sourceType === 'HDFS') {
+      sourceConfig.dbType = data.sourceType
+      sourceConfig.filePath = data.sourceFilePath
+      sourceConfig.fileFormat = data.sourceFileFormat
+      sourceConfig.defaultFs = data.sourceDefaultFs
+    } else {
+      sourceConfig.dbType = data.sourceType
+      sourceConfig.databaseId = data.sourceDatabase
+      sourceConfig.table = data.sourceTable
+    }
+
+    if (data.targetType === 'HDFS') {
+      targetConfig.dbType = data.targetType
+      targetConfig.filePath = data.targetFilePath
+      targetConfig.fileFormat = data.targetFileFormat
+      targetConfig.defaultFs = data.targetDefaultFs
+    } else {
+      targetConfig.dbType = data.targetType
+      targetConfig.databaseId = data.targetDatabase
+      targetConfig.table = data.targetTable
+    }
+
+    sourceConfig.customParams = data.sourceCustomParams
+    targetConfig.customParams = data.targetCustomParams
+
+    taskParams.customDataFilter = data.customDataFilter
+    taskParams.customTransform = data.customTransform
+    taskParams.sourceType = data.sourceType
+    taskParams.targetType = data.targetType
+
+    taskParams.sourceConfig = JSON.stringify(sourceConfig)
+    taskParams.targetConfig = JSON.stringify(targetConfig)
   }
 
   if (data.taskType === 'SWITCH') {
@@ -705,6 +746,42 @@ export function formatModel(data: ITaskData) {
   }
   if (data.taskParams?.jobType) {
     params.isCustomTask = data.taskParams.jobType === 'CUSTOM'
+  }
+
+  if (data.taskParams?.sourceConfig) {
+    const sourceConfig: ISeatunnelDataParams = JSON.parse(
+      data.taskParams.sourceConfig
+    )
+
+    params.sourceType = sourceConfig.dbType
+    params.sourceDatabase = sourceConfig.databaseId
+    params.sourceFilePath = sourceConfig.filePath
+    params.sourceFileFormat = sourceConfig.fileFormat
+    params.sourceTable = sourceConfig.table
+    params.sourceDefaultFs = sourceConfig.defaultFs
+    params.sourceCustomParams = sourceConfig.customParams
+  }
+
+  if (data.taskParams?.targetConfig) {
+    const targetConfig: ISeatunnelDataParams = JSON.parse(
+      data.taskParams.targetConfig
+    )
+
+    params.targetType = targetConfig.dbType
+    params.targetDatabase = targetConfig.databaseId
+    params.targetFilePath = targetConfig.filePath
+    params.targetFileFormat = targetConfig.fileFormat
+    params.targetTable = targetConfig.table
+    params.targetDefaultFs = targetConfig.defaultFs
+    params.targetCustomParams = targetConfig.customParams
+  }
+
+  if (data.taskParams?.parallelism) {
+    params.parallelism = data.taskParams.parallelism
+  }
+
+  if (data.taskParams?.jobMode) {
+    params.jobMode = data.taskParams.jobMode
   }
 
   return params

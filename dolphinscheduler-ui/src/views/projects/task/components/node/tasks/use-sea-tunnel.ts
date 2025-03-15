@@ -48,8 +48,8 @@ export function useSeaTunnel({
     timeout: 30,
     startupScript: 'seatunnel.sh',
     runMode: 'RUN',
-    useCustom: true,
-    deployMode: 'client',
+    useCustom: false,
+    deployMode: 'local',
     master: 'YARN',
     masterUrl: '',
     resourceFiles: [],
@@ -78,7 +78,25 @@ export function useSeaTunnel({
       'sink {\n' +
       '  Console {\n' +
       '  }\n' +
-      '}'
+      '}',
+    sourceType: 'MYSQL',
+    sourceFilePath: '',
+    targetType: 'MYSQL',
+    targetFilePath: '',
+    customDataFilter: false,
+    customTransform:
+      'transform {\n' +
+      '    sql {\n' +
+      '        query = "select name,age from fake"\n' +
+      '    }\n' +
+      '}\n',
+    fileFormat: 'parquet',
+    parallelism: 1,
+    sourceCustomParams: [],
+    targetCustomParams: [],
+    jobMode: 'BATCH',
+    xms: 1,
+    xmx: 1
   } as INodeData)
 
   return {

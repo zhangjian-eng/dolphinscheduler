@@ -16,14 +16,20 @@
  */
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useDeployMode, useResources, useCustomParams } from '.'
+import {
+  useDeployMode,
+  useResources,
+  useCustomParams,
+  useSeaTunnelSourceType,
+  useSeaTunnelTargetType
+} from '.'
 import type { IJsonItem } from '../types'
 
 export function useSeaTunnel(model: { [field: string]: any }): IJsonItem[] {
   const { t } = useI18n()
 
   const configEditorSpan = computed(() => (model.useCustom ? 24 : 0))
-  const resourceEditorSpan = computed(() => (model.useCustom ? 0 : 24))
+  const resourceEditorSpan = computed(() => (model.useCustom ? 24 : 0))
   const flinkSpan = computed(() =>
     model.startupScript.includes('flink') ? 24 : 0
   )
@@ -53,6 +59,22 @@ export function useSeaTunnel(model: { [field: string]: any }): IJsonItem[] {
       ? 24
       : 0
   )
+
+  const customDataFilterSpan = computed(() =>
+    model['useCustom'] === true ? 0 : 24
+  )
+
+  const customTransformEditorSpan = computed(() => {
+    if (model['useCustom']) {
+      return 0
+    }
+    if (model['customDataFilter']) {
+      return 24
+    }
+    return 0
+  })
+
+  const useCustomSpan = computed(() => (model['useCustom'] === true ? 0 : 24))
 
   return [
     {
@@ -132,6 +154,20 @@ export function useSeaTunnel(model: { [field: string]: any }): IJsonItem[] {
 
     // SeaTunnel config parameter
     {
+      type: 'input-number',
+      field: 'parallelism',
+      name: t('project.node.parallelism'),
+      span: 24,
+      props: { min: 1 }
+    },
+    {
+      type: 'select',
+      field: 'jobMode',
+      name: t('project.node.sea_tunnel_job_mode'),
+      options: jobModeOptions,
+      span: 12
+    },
+    {
       type: 'switch',
       field: 'useCustom',
       name: t('project.node.custom_config')
@@ -151,7 +187,50 @@ export function useSeaTunnel(model: { [field: string]: any }): IJsonItem[] {
         }
       }
     },
-    useResources(resourceEditorSpan, true, 1),
+    ...useSeaTunnelSourceType(model, useCustomSpan),
+    ...useSeaTunnelTargetType(model, useCustomSpan),
+    {
+      type: 'switch',
+      field: 'customDataFilter',
+      name: t('project.node.sea_tunnel_custom_filter'),
+      span: customDataFilterSpan
+    },
+    {
+      type: 'editor',
+      field: 'customTransform',
+      span: customTransformEditorSpan,
+      name: t('project.node.sea_tunnel_custom_transform'),
+      validate: {
+        trigger: ['input', 'blur'],
+        required: true,
+        validator(unuse: any, value) {
+          if (!value && value !== 0) {
+            return Error(t('project.node.sea_tunnel_custom_transform'))
+          }
+        }
+      }
+    },
+    {
+      type: 'input-number',
+      field: 'xms',
+      name: t('project.node.sea_tunnel_job_runtime_memory_xms'),
+      span: 12,
+      slots: {
+        suffix: () => t('project.node.gb')
+      },
+      props: { min: 1 }
+    },
+    {
+      type: 'input-number',
+      field: 'xmx',
+      name: t('project.node.sea_tunnel_job_runtime_memory_xmx'),
+      span: 12,
+      slots: {
+        suffix: () => t('project.node.gb')
+      },
+      props: { min: 1 }
+    },
+    useResources(resourceEditorSpan, false, 1),
     ...useCustomParams({ model, field: 'localParams', isSimple: true })
   ]
 }
@@ -226,5 +305,16 @@ export const masterTypeOptions = [
   {
     label: 'mesos://',
     value: 'MESOS'
+  }
+]
+
+export const jobModeOptions = [
+  {
+    label: 'BATCH',
+    value: 'BATCH'
+  },
+  {
+    label: 'STREAMING',
+    value: 'STREAMING'
   }
 ]

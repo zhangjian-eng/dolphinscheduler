@@ -17,10 +17,21 @@
 
 package org.apache.dolphinscheduler.plugin.task.seatunnel;
 
+import static org.apache.dolphinscheduler.plugin.task.seatunnel.Constants.DORIS;
+import static org.apache.dolphinscheduler.plugin.task.seatunnel.Constants.HDFS;
+import static org.apache.dolphinscheduler.plugin.task.seatunnel.Constants.MYSQL;
+
+import org.apache.dolphinscheduler.common.utils.JSONUtils;
+import org.apache.dolphinscheduler.plugin.task.api.enums.ResourceType;
 import org.apache.dolphinscheduler.plugin.task.api.model.ResourceInfo;
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
+import org.apache.dolphinscheduler.plugin.task.api.parameters.resource.DataSourceParameters;
+import org.apache.dolphinscheduler.plugin.task.api.parameters.resource.ResourceParametersHelper;
+import org.apache.dolphinscheduler.plugin.task.seatunnel.parameter.CommonConfigParameters;
+import org.apache.dolphinscheduler.plugin.task.seatunnel.parameter.DorisParameters;
+import org.apache.dolphinscheduler.plugin.task.seatunnel.parameter.HdfsFileParameters;
+import org.apache.dolphinscheduler.plugin.task.seatunnel.parameter.MysqlParameters;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -36,11 +47,70 @@ import lombok.Setter;
 @NoArgsConstructor
 public class SeatunnelParameters extends AbstractParameters {
 
+    /**
+     * source type
+     */
+    private String sourceType;
+
+    /**
+     * target type
+     */
+    private String targetType;
+
+    /**
+     * source config parameters
+     */
+    private String sourceConfig;
+
+    /**
+     * sink config parameters
+     */
+    private String targetConfig;
+
+    /**
+     * task parallelism
+     */
+    private int parallelism;
+
+    /**
+     * job.mode type in seatunnel env
+     */
+    private JobModeEnum jobMode;
+
+    /**
+     * Enable custom data filtering
+     */
+    private boolean customDataFilter;
+
+    /**
+     * Custom seatunnel transform config when customDataFilter set true
+     */
+    private String customTransform;
+
+    /**
+     * startup script
+     */
     private String startupScript;
 
-    private Boolean useCustom;
+    /**
+     * Whether to use user-defined configuration
+     */
+    private boolean useCustom;
 
+    /**
+     * raw script
+     */
     private String rawScript;
+
+    /**
+     * Xms memory
+     */
+    private int xms;
+
+    /**
+     * Xmx memory
+     */
+    private int xmx;
 
     /**
      * resource list
@@ -51,12 +121,104 @@ public class SeatunnelParameters extends AbstractParameters {
     public boolean checkParameters() {
         return Objects.nonNull(startupScript)
                 && ((BooleanUtils.isTrue(useCustom) && StringUtils.isNotBlank(rawScript))
-                        || (BooleanUtils.isFalse(useCustom) && CollectionUtils.isNotEmpty(resourceList)
-                                && resourceList.size() == 1));
+                        || (BooleanUtils.isFalse(useCustom) && sourceConfig != null && targetConfig != null));
     }
 
     @Override
     public List<ResourceInfo> getResourceFilesList() {
         return resourceList;
+    }
+
+    @Override
+    public ResourceParametersHelper getResources() {
+        ResourceParametersHelper resources = super.getResources();
+
+        if (this.isUseCustom()) {
+            return resources;
+        }
+
+        if (StringUtils.isNotEmpty(sourceConfig)) {
+            CommonConfigParameters sourceParameters =
+                    (CommonConfigParameters) JSONUtils.parseObject(this.getSourceConfig(),
+                            getSourceParameter(this.getSourceType()));
+            int sourceDatabaseId = sourceParameters.getDatabaseId();
+            if (sourceDatabaseId != 0) {
+                resources.put(ResourceType.DATASOURCE, sourceDatabaseId);
+            }
+        }
+
+        if (StringUtils.isNotEmpty(targetConfig)) {
+            CommonConfigParameters sinkParameters =
+                    (CommonConfigParameters) JSONUtils.parseObject(this.getTargetConfig(),
+                            getTargetParameter(this.getTargetType()));
+            int sinkDatabaseId = sinkParameters.getDatabaseId();
+            if (sinkDatabaseId != 0) {
+                resources.put(ResourceType.DATASOURCE, sinkDatabaseId);
+            }
+        }
+
+        return resources;
+    }
+
+    public SeatunnelTaskExecutionContext generateExtendedContext(ResourceParametersHelper resourceParametersHelper) {
+
+        SeatunnelTaskExecutionContext seatunnelTaskExecutionContext = new SeatunnelTaskExecutionContext();
+
+        if (this.isUseCustom()
+                || resourceParametersHelper.getResourceMap().isEmpty()) {
+            return seatunnelTaskExecutionContext;
+        }
+
+        CommonConfigParameters sourceParameter = (CommonConfigParameters) JSONUtils.parseObject(this.getSourceConfig(),
+                getSourceParameter(this.getSourceType()));
+
+        CommonConfigParameters sinkParameter = (CommonConfigParameters) JSONUtils.parseObject(this.getTargetConfig(),
+                getTargetParameter(this.getTargetType()));
+
+        DataSourceParameters dataSource = (DataSourceParameters) resourceParametersHelper
+                .getResourceParameters(ResourceType.DATASOURCE, sourceParameter.getDatabaseId());
+
+        DataSourceParameters dataSink = (DataSourceParameters) resourceParametersHelper
+                .getResourceParameters(ResourceType.DATASOURCE, sinkParameter.getDatabaseId());
+
+        if (Objects.nonNull(dataSource)) {
+            seatunnelTaskExecutionContext.setDataSourceId(sourceParameter.getDatabaseId());
+            seatunnelTaskExecutionContext.setDataSourceType(dataSource.getType());
+            seatunnelTaskExecutionContext.setSourceConnectionParams(dataSource.getConnectionParams());
+        }
+
+        if (Objects.nonNull(dataSink)) {
+            seatunnelTaskExecutionContext.setDataTargetId(sinkParameter.getDatabaseId());
+            seatunnelTaskExecutionContext.setDataTargetType(dataSink.getType());
+            seatunnelTaskExecutionContext.setTargetConnectionParams(dataSink.getConnectionParams());
+        }
+
+        return seatunnelTaskExecutionContext;
+    }
+
+    private Class<?> getSourceParameter(String sourceType) {
+        switch (sourceType) {
+            case MYSQL:
+                return MysqlParameters.class;
+            case HDFS:
+                return HdfsFileParameters.class;
+            case DORIS:
+                return DorisParameters.class;
+            default:
+                return null;
+        }
+    }
+
+    private Class<?> getTargetParameter(String sinkType) {
+        switch (sinkType) {
+            case MYSQL:
+                return MysqlParameters.class;
+            case HDFS:
+                return HdfsFileParameters.class;
+            case DORIS:
+                return DorisParameters.class;
+            default:
+                return null;
+        }
     }
 }
