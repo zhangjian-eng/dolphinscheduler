@@ -252,6 +252,8 @@ export default {
     operating_environment: '运行环境',
     cancel_full_screen: '取消全屏',
     enter_full_screen: '全屏',
+    enter_log_auto_scroll: '启动日志自动刷新',
+    cancel_log_auto_scroll: '取消日志自动刷新',
     current_task_settings: '当前任务设置',
     online: '已上线',
     offline: '已下线',

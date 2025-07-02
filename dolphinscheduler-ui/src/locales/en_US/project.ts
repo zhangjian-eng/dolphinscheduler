@@ -256,6 +256,8 @@ export default {
     operating_environment: 'Operating Environment',
     cancel_full_screen: 'Cancel full screen',
     enter_full_screen: 'Enter full screen',
+    enter_log_auto_scroll: 'Enable log auto scroll',
+    cancel_log_auto_scroll: 'Disable log auto scroll',
     current_task_settings: 'Current task settings',
     online: 'Online',
     offline: 'Offline',

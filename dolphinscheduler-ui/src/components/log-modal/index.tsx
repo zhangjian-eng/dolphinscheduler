@@ -23,16 +23,20 @@ import {
   reactive,
   toRefs,
   onMounted,
-  onUnmounted
+  onUnmounted,
+  nextTick,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NIcon, NLog } from 'naive-ui'
+import type { LogInst } from 'naive-ui'
 import Modal from '../modal'
 import {
   DownloadOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
-  SyncOutlined
+  SyncOutlined,
+  ProfileOutlined
 } from '@vicons/antd'
 import screenfull from 'screenfull'
 
@@ -67,8 +71,12 @@ export default defineComponent({
     const { t } = useI18n()
 
     const variables = reactive({
-      isFullscreen: false
+      isFullscreen: false,
+      autoScrollToBottom: true // New state variable
     })
+    
+    const logInstRef = ref<LogInst | null>(null)
+
 
     const change = () => {
       variables.isFullscreen = screenfull.isFullscreen
@@ -94,13 +102,26 @@ export default defineComponent({
     const downloadLogs = () => {
       ctx.emit('downloadLogs', props.row)
     }
+  
+    const toggleAutoScroll = () => {
+      variables.autoScrollToBottom = !variables.autoScrollToBottom
+    }
+  
+    // Listen for changes in logRef and scroll to the bottom if autoScrollToBottom is enabled
+    watchEffect(() => {
+      if (props.logRef && variables.autoScrollToBottom) {
+        nextTick(() => {
+          logInstRef.value?.scrollTo({ position: 'bottom', slient: true })
+        })
+      }
+    })
 
     onMounted(() => {
       screenfull.on('change', change)
     })
 
     onUnmounted(() => {
-      screenfull.on('change', change)
+      screenfull.off('change', change)
     })
 
     return {
@@ -110,6 +131,8 @@ export default defineComponent({
       refreshLogs,
       downloadLogs,
       handleFullScreen,
+      toggleAutoScroll,
+      logInstRef,
       ...toRefs(variables)
     }
   },
@@ -121,6 +144,8 @@ export default defineComponent({
       downloadLogs,
       isFullscreen,
       handleFullScreen,
+      toggleAutoScroll,
+      autoScrollToBottom,
       showDownloadLog
     } = this
     return (
@@ -132,6 +157,14 @@ export default defineComponent({
         onConfirm={this.confirmModal}
         style={{ width: '60%' }}
         headerLinks={ref([
+          {
+            text: autoScrollToBottom
+              ? t('project.task.disable_log_auto_scroll')
+              : t('project.task.enable_log_auto_scroll'),
+            show: true,
+            action: toggleAutoScroll,
+            icon: renderIcon(ProfileOutlined)
+          },
           {
             text: t('project.workflow.download_log'),
             show: showDownloadLog,
@@ -157,6 +190,7 @@ export default defineComponent({
         ])}
       >
         <NLog
+          ref="logInstRef"
           rows={30}
           log={this.logRef}
           loading={this.logLoadingRef}
