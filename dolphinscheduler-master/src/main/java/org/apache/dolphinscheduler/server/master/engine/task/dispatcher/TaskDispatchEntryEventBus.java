@@ -15,21 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.dolphinscheduler.server.master.runner.queue;
+package org.apache.dolphinscheduler.server.master.engine.task.dispatcher;
 
-import static com.google.common.truth.Truth.assertThat;
+import org.apache.dolphinscheduler.eventbus.AbstractDelayEventBus;
 
-import java.util.concurrent.TimeUnit;
+import lombok.SneakyThrows;
+import org.apache.dolphinscheduler.server.master.engine.task.dispatcher.event.TaskDispatchEntryEvent;
 
-import org.junit.jupiter.api.Test;
+public class WorkerGroupEventBus<V extends TaskDispatchEntryEvent<T>, T extends Comparable<T>>
+        extends
+            AbstractDelayEventBus<V> {
 
-class DelayEntryTest {
+    public void add(V v) {
+        super.publish(v);
+    }
 
-    @Test
-    void getDelay() {
-        DelayEntry<String> delayEntry = new DelayEntry<>(5_000L, "Item");
-        assertThat(delayEntry.getDelay(TimeUnit.NANOSECONDS))
-                .isWithin(TimeUnit.NANOSECONDS.convert(500, TimeUnit.MILLISECONDS))
-                .of(TimeUnit.NANOSECONDS.convert(5_000L, TimeUnit.MILLISECONDS));
+    @SneakyThrows
+    public V take() {
+        return super.take();
+    }
+
+    // Only use in test
+    public int size() {
+        return delayEventQueue.size();
+    }
+
+    // Only use in test
+    public void clear() {
+        delayEventQueue.clear();
     }
 }
