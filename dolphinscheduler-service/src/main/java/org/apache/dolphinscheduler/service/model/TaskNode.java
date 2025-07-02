@@ -100,13 +100,6 @@ public class TaskNode {
     private String params;
 
     /**
-     * inner dependency information
-     */
-    @JsonDeserialize(using = JSONUtils.JsonDataDeserializer.class)
-    @JsonSerialize(using = JSONUtils.JsonDataSerializer.class)
-    private String preTasks;
-
-    /**
      * users store additional information
      */
     @JsonDeserialize(using = JSONUtils.JsonDataDeserializer.class)
@@ -116,7 +109,7 @@ public class TaskNode {
     /**
      * node dependency list
      */
-    private List<Long> depList;
+    private List<Long> predecessors;
 
     /**
      * task instance priority
@@ -200,15 +193,6 @@ public class TaskNode {
         this.params = params;
     }
 
-    public String getPreTasks() {
-        return preTasks;
-    }
-
-    public void setPreTasks(String preTasks) {
-        this.preTasks = preTasks;
-        this.depList = JSONUtils.toList(preTasks, Long.class);
-    }
-
     public String getExtras() {
         return extras;
     }
@@ -217,14 +201,13 @@ public class TaskNode {
         this.extras = extras;
     }
 
-    public List<Long> getDepList() {
-        return depList;
+    public List<Long> getPredecessors() {
+        return predecessors;
     }
 
-    public void setDepList(List<Long> depList) {
-        if (depList != null) {
-            this.depList = depList;
-            this.preTasks = JSONUtils.toJsonString(depList);
+    public void setPredecessors(List<Long> predecessors) {
+        if (predecessors != null) {
+            this.predecessors = predecessors;
         }
     }
 
@@ -265,18 +248,17 @@ public class TaskNode {
                 && Objects.equals(desc, taskNode.desc)
                 && Objects.equals(type, taskNode.type)
                 && Objects.equals(params, taskNode.params)
-                && Objects.equals(preTasks, taskNode.preTasks)
                 && Objects.equals(extras, taskNode.extras)
                 && Objects.equals(runFlag, taskNode.runFlag)
                 && Objects.equals(workerGroup, taskNode.workerGroup)
                 && Objects.equals(environmentCode, taskNode.environmentCode)
-                && CollectionUtils.isEqualCollection(depList, taskNode.depList)
+                && CollectionUtils.isEqualCollection(predecessors, taskNode.predecessors)
                 && Objects.equals(taskExecuteType, taskNode.taskExecuteType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, desc, type, params, preTasks, extras, depList, runFlag);
+        return Objects.hash(name, desc, type, params, extras, predecessors, runFlag);
     }
 
     public int getMaxRetryTimes() {
@@ -357,9 +339,8 @@ public class TaskNode {
                 + ", maxRetryTimes=" + maxRetryTimes
                 + ", retryInterval=" + retryInterval
                 + ", params='" + params + '\''
-                + ", preTasks='" + preTasks + '\''
                 + ", extras='" + extras + '\''
-                + ", depList=" + depList
+                + ", depList=" + predecessors
                 + ", taskInstancePriority=" + taskInstancePriority
                 + ", workerGroup='" + workerGroup + '\''
                 + ", environmentCode=" + environmentCode

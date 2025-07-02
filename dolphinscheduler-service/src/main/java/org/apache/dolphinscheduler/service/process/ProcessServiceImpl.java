@@ -1314,8 +1314,8 @@ public class ProcessServiceImpl implements ProcessService {
                                 taskDefinitionLog.getTimeoutNotifyStrategy(),
                                 taskDefinitionLog.getTimeout())));
                 taskNode.setDelayTime(taskDefinitionLog.getDelayTime());
-                taskNode.setPreTasks(JSONUtils.toJsonString(code.getValue().stream().map(taskDefinitionLogMap::get)
-                        .map(TaskDefinition::getCode).collect(Collectors.toList())));
+                taskNode.setPredecessors(code.getValue().stream().map(taskDefinitionLogMap::get)
+                        .map(TaskDefinition::getCode).collect(Collectors.toList()));
                 taskNode.setTaskGroupId(taskDefinitionLog.getTaskGroupId());
                 taskNode.setTaskGroupPriority(taskDefinitionLog.getTaskGroupPriority());
                 taskNode.setCpuQuota(taskDefinitionLog.getCpuQuota());
