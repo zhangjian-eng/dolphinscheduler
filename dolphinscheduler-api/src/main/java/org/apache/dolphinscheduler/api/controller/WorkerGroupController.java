@@ -112,7 +112,6 @@ public class WorkerGroupController extends BaseController {
                                              @RequestParam("pageSize") Integer pageSize,
                                              @RequestParam(value = "searchVal", required = false) String searchVal) {
         checkPageParams(pageNo, pageSize);
-        searchVal = ParameterUtils.handleEscapes(searchVal);
         return workerGroupService.queryAllGroupPaging(loginUser, pageNo, pageSize, searchVal);
     }
 

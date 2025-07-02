@@ -117,7 +117,9 @@ public class ParameterUtilsTest {
         Assertions.assertNull(ParameterUtils.handleEscapes(null));
         assertEquals("", ParameterUtils.handleEscapes(""));
         assertEquals("test Parameter", ParameterUtils.handleEscapes("test Parameter"));
-        assertEquals("////%test////%Parameter", ParameterUtils.handleEscapes("%test%Parameter"));
+        assertEquals("\\%test\\%Parameter", ParameterUtils.handleEscapes("%test%Parameter"));
+        Assertions.assertEquals("\\_test\\_Parameter", ParameterUtils.handleEscapes("_test_Parameter"));
+        Assertions.assertEquals("\\\\test\\\\Parameter", ParameterUtils.handleEscapes("\\test\\Parameter"));
     }
 
 }
