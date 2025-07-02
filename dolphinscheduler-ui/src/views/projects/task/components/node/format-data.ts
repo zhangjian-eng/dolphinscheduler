@@ -458,6 +458,15 @@ export function formatParams(data: INodeData): {
     taskParams.datasource = data.datasource
   }
 
+  if (data.taskType === 'FLINK_MATERIALIZED_TABLE') {
+    taskParams.identifier = data.identifier
+    taskParams.gatewayEndpoint = data.gatewayEndpoint
+    taskParams.dynamicOptions = data.dynamicOptions
+    taskParams.staticPartitions = data.staticPartitions
+    taskParams.initConfig = data.initConfig
+    taskParams.executionConfig = data.executionConfig
+  }
+
   let timeoutNotifyStrategy = ''
   if (data.timeoutNotifyStrategy) {
     if (data.timeoutNotifyStrategy.length === 1) {

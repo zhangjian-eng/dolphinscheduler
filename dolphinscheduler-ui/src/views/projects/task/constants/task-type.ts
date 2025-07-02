@@ -51,6 +51,7 @@ export type TaskType =
   | 'DATA_FACTORY'
   | 'REMOTESHELL'
   | 'ALIYUN_SERVERLESS_SPARK'
+  | 'FLINK_MATERIALIZED_TABLE'
 
 export type TaskExecuteType = 'STREAM' | 'BATCH'
 
@@ -185,6 +186,10 @@ export const TASK_TYPES_MAP = {
   },
   ALIYUN_SERVERLESS_SPARK: {
     alias: 'ALIYUN_SERVERLESS_SPARK',
+    helperLinkDisable: true
+  },
+  FLINK_MATERIALIZED_TABLE: {
+    alias: 'FLINK_MATERIALIZED_TABLE',
     helperLinkDisable: true
   }
 } as {
